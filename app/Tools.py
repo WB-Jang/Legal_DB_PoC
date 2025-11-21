@@ -10,7 +10,7 @@ db = faiss_vector_db(
 def rerank_by_api(query):
     search_results = db._search_db(query, k=30)
     candidate_texts = [r[0] for r in search_results]
-    api_url = "http://127.0.0.1:8081/v1/rerank"
+    api_url = "http://127.0.0.1:8082/v1/rerank"
     
     payload = {
         "query": query,
