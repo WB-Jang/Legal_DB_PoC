@@ -55,6 +55,18 @@ poetry install
 poetry shell
 ```
 
+## 환경 설정
+
+프로젝트를 실행하기 전에 환경 변수를 설정하세요:
+
+```bash
+# .env.example을 복사하여 .env 파일 생성
+cp .env.example .env
+
+# 필요에 따라 .env 파일을 편집
+# 주요 설정: LLM 서버 URL, 모델 경로 등
+```
+
 ## 애플리케이션 실행
 
 이 프로젝트는 여러 서버 구성 요소가 필요합니다:
@@ -81,6 +93,10 @@ llama-server -m "path/to/model.gguf" --top-p 0.9 --repeat-penalty 1.15 --host 12
 프로젝트 내부에서 실행:
 
 ```bash
+# 간편 실행 스크립트 사용
+./scripts/start_rerank_api.sh
+
+# 또는 직접 실행
 # Poetry 환경에서
 poetry run uvicorn app.rerank_api:app --host 0.0.0.0 --port 8082
 
@@ -113,10 +129,13 @@ python app/legal_agent.py
 ├── 0.faiss_db/                # FAISS 인덱스 저장
 ├── .devcontainer/             # Dev Container 설정
 │   └── devcontainer.json
+├── scripts/                   # 유틸리티 스크립트
+│   └── start_rerank_api.sh
 ├── Dockerfile                 # Docker 설정
 ├── docker-compose.yml         # Docker Compose 설정
 ├── pyproject.toml            # Poetry 종속성
 ├── poetry.lock               # Poetry 잠금 파일
+├── .env.example              # 환경 변수 예제
 └── .gitignore                # Git 무시 파일
 
 ```
