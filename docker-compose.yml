@@ -1,0 +1,20 @@
+services:
+  legal-db-poc:
+    build: .
+    container_name: legal-db-poc
+    volumes:
+      - .:/workspace
+    ports:
+      - "8082:8082"
+    environment:
+      - PYTHONUNBUFFERED=1
+    working_dir: /workspace
+    command: bash
+    stdin_open: true
+    tty: true
+    networks:
+      - legal-db-network
+
+networks:
+  legal-db-network:
+    driver: bridge
