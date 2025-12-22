@@ -19,7 +19,20 @@ VS Code에서 Dev Container를 사용하여 환경을 자동으로 설정할 수
 3. Command Palette (Ctrl+Shift+P / Cmd+Shift+P)를 열고 "Dev Containers: Reopen in Container"를 선택합니다
 4. 컨테이너가 빌드되고 모든 종속성이 자동으로 설치됩니다
 
-### 2. Docker로 직접 실행하기
+### 2. Docker Compose로 실행하기 (권장)
+
+```bash
+# 컨테이너 빌드 및 시작
+docker-compose up -d
+
+# 컨테이너에 접속
+docker-compose exec legal-db-poc bash
+
+# 컨테이너 중지
+docker-compose down
+```
+
+### 3. Docker로 직접 실행하기
 
 ```bash
 # Docker 이미지 빌드
@@ -29,7 +42,7 @@ docker build -t legal-db-poc .
 docker run -it -v $(pwd):/workspace -p 8082:8082 legal-db-poc
 ```
 
-### 3. Poetry로 로컬 설치
+### 4. Poetry로 로컬 설치
 
 ```bash
 # Poetry 설치 (아직 설치하지 않은 경우)
@@ -101,6 +114,7 @@ python app/legal_agent.py
 ├── .devcontainer/             # Dev Container 설정
 │   └── devcontainer.json
 ├── Dockerfile                 # Docker 설정
+├── docker-compose.yml         # Docker Compose 설정
 ├── pyproject.toml            # Poetry 종속성
 ├── poetry.lock               # Poetry 잠금 파일
 └── .gitignore                # Git 무시 파일
@@ -140,6 +154,35 @@ poetry run mypy app/
 - LLM 서버는 사용자가 외부에서 localhost를 통해 직접 관리해야 합니다
 - 모델 파일(`.gguf`, `.bin` 등)은 `.gitignore`에 포함되어 있어 Git에 커밋되지 않습니다
 - FAISS 인덱스 파일도 Git에서 제외됩니다 (필요시 로컬에서 생성)
+
+## 알려진 문제
+
+코드를 실행하기 전에 다음 수정이 필요합니다:
+
+1. **app/legal_agent.py (29번째 줄)**:
+   ```python
+   # 수정 전
+   req = {'user_input': input)
+   
+   # 수정 후
+   req = {'user_input': input}
+   ```
+
+2. **app/llm_keyword_extractor.py (5번째 줄)**:
+   ```python
+   # 수정 전
+   from typing import literal, Dict, Ant
+   
+   # 수정 후
+   from typing import Literal, Dict, Any
+   ```
+
+3. **app/llm_keyword_extractor.py (38번째 줄)**:
+   - `state` 변수가 정의되지 않았습니다. 함수 매개변수로 추가해야 합니다:
+   ```python
+   # 수정 후
+   def keywords_extractor(state: AgentState):
+   ```
 
 ## 라이선스
 
