@@ -1,29 +1,123 @@
-from _faiss import faiss_vector_db
-from llm_keyword_extractor import AgentState
 import requests
+import faiss
+import numpy as np
+import json, os
+from state_types import AgentState
+# on-premise model을 local host server에 띄워둔 상태에서 진행
+# C:\Users\1598505\OneDrive - Standard Chartered Bank\5.Python\jupyter_notebook\2.Script\3.Automation\Report_agent\llama.cpp>llama-server.exe -m "C:/Users/1598505/OneDrive - Standard Chartered Bank/5.Python/AI/0.models/bge-m3-FP16.gguf" --embedding -t 8 -c 4092 -b 2048 -ub 2048 -np 1 -v --host 0.0.0.0 --port 8081
+# -b 옵션의 크기를 크게 해야지, 긴 문장도 임베딩이 된다(-ub는 -b와 같은 숫자 사용하면 안전)
+# 다른 서버와의 충돌을 위하여 port 8080이 아닌 port 8081을 사용
 
-db = faiss_vector_db(
-    save_dir="../0.faiss_db",
-    save_idx="privacy_idx.index",
-    save_nm="privacy_store.json"
-)
+
+class faiss_vector_db:
+    def __init__(self, save_dir, save_idx ,save_nm):
+        self.save_dir = save_dir
+        self.save_idx = save_idx
+        self.save_nm = save_nm
+        self.SERVER = "HTTP://127.0.0.1:8081"
+        
+    def _embed_text(self, texts):
+        """
+        llama-server의 /v1/embeddings 엔드포인트를 사용해 bge-m3.gguf 임베딩 진행
+        반환 결과 : (N, D) float32 numpy array
+        N = chunk나 sentence의 개수
+        D = 각 chunk나 sentence를 vector space로 넘길 때에, vector의 차원
+        """
+        out=[]
+        for t in texts:
+            vecs = None 
+            try:
+                r= requests.post(f"{self.SERVER}/v1/embeddings", json={"model": "bge-m3", "input": t}, timeout=45)
+                if r.ok and "data" in r.json():
+                    vecs= r.json()["data"][0]["embedding"]
+                    v = np.array(vecs, dtype=np.float32)
+                    v /= (np.linalg.norm(v)+1e-12) # cosine similarity를 사용하기 위해서 정규화 실시
+                    out.append(v)
+            except Exception:
+                pass
+        if vecs is None:
+            raise RuntimeError(f"embedding API 실패: {t}")
+            
+        return np.vstack(out).astype("float32")
+    
+    def _make_index(self, texts): # idx는 "faiss_ip.index"와 같은 형식
+        text_embedded = self._embed_text(texts)
+        text_ids = np.arange(len(texts),dtype=np.int64)
+
+        dim = text_embedded.shape[1]
+        base_index = faiss.IndexFlatIP(dim)
+        print("base_index 완성")
+        index = faiss.IndexIDMap2(base_index)
+        print("index map 완성")
+        index.add_with_ids(text_embedded, text_ids)
+        print("index_size : ", index.ntotal)
+
+
+        faiss.write_index(index, os.path.join(self.save_dir, self.save_idx))
+        with open(os.path.join(self.save_dir, self.save_nm), "w", encoding="utf-8") as f:
+            json.dump({int(i):texts[i] for i in range(len(texts))}, f, ensure_ascii=False, indent=2)
+
+        print("Saved : ", index.ntotal, " vectors")
+    
+    def _search_db(self, q, k):
+        index = faiss.read_index(os.path.join(self.save_dir, self.save_idx))
+        with open(os.path.join(self.save_dir,self.save_nm),"r", encoding="utf-8") as f:
+            DOCS = {int(k): v for k, v in json.load(f).items()}
+
+            print("loaded_index size : ", index.ntotal)
+
+            # Test
+            query = q
+            q_emb = self._embed_text([query])
+            print("임베딩 된 쿼리 : ",q_emb)
+            D, I = index.search(q_emb.astype("float32"), k)
+            print(f'--- search results : [선택된 {k}개의 Distance[유사도] : {D}"], [선택된 n개의 Index[문장번호] : {I}"] ---' )
+
+            search_result = []
+            for idx, score in zip(I[0], D[0]):
+                if idx == -1:
+                    continue
+                search_result.append(DOCS[idx])
+            # print(search_result)
+        return search_result
+   
+
 
 def rerank_by_api(state: AgentState):
+    print('state 중간 점검 : ', state)
+    db = faiss_vector_db(
+    save_dir=r"C:\\Users\\1598505\\OneDrive - Standard Chartered Bank\\5.Python\\AI\\7_Legal_DB_PoC\\0.faiss_db",
+    save_idx="privacy_idx.index",
+    save_nm="privacy_store.json"
+    )
+   
     candidate_texts = []
     for key in state.keywords:
-        search_results = db._search_db(key, k=3)
-        candidate_texts.append(search_results)
-    print('1st ranking result : ',candidate_texts)
-    
-    api_url = "http://127.0.0.1:8082/v1/rerank"
-    
+        print('검색 중인 키워드 : ',key)
+        search_results = db._search_db(q=key, k=state.rank)
+        for i in range(len(search_results)):
+            candidate_texts.append(search_results[i])
+    candidate_texts_set = list(set(candidate_texts))
+    print(f'최종 후보 조항(중복 제거 전) : 총 {len(candidate_texts)}개')
+    print(f'최종 후보 조항(중복 제거 후) : 총 {len(candidate_texts_set)}개')
+                        
+    api_url = "http://127.0.0.1:8082/rerank"
+
     payload = {
         "query": state.user_input,
-        "candidates": candidate_texts
+        "candidates": candidate_texts_set
     }
-    r = requests.post(api_url, json=payload, timeout=30)
-    results = r.json()["results"]  # [{"text": ..., "score": ...}, ...]
-   
-    return sorted(results, key=lambda x: x["score"], reverse=True)
+    r = requests.post(api_url, json=payload)
+    print('re-rank 이후 Raw-result : ',r)
+    k = state.rerank
+    print('state.rerank : ',k)
+    print('최종 q-text pair 개수 : ',min(k,len(candidate_texts_set)))
+    top_k = []
+    for i in range(min(k,len(candidate_texts_set))):
+        top_k.append(r.json()["results"][i]['text'])
+    state.result = top_k
+    print(top_k)
+    return state
+
 
 

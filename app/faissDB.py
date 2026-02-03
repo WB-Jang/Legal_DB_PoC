@@ -81,42 +81,9 @@ class faiss_vector_db:
             print(search_result)
         return search_result
    
+db = faiss_vector_db(
+    save_dir=r".../0.faiss_db",
+    save_idx="privacy_idx.index",
+    save_nm="privacy_store.json"
+)
 
-
-
-
-# # 문장 임베딩
-
-# sentences = ['나는 은행의 리스크관리부에서 근무 중이다','내가 좋아하는 음식은 김치찌개다','리스크관리는 은행의 비즈니스 과정에서 발생하는 리스크를 통제하는 업무이다','은행의 리스크업무에는 신용리스크, 시장리스크, 운영리스크, 금리리스크 등이 있다']
-# print("문장 수 : ", len(sentences))
-# #sentences_ids = np.arange(2,dtype=np.int64)
-# sentences_ids = np.arange(len(sentences),dtype=np.int64)
-# print("ID map : ", sentences_ids)
-# sentences_embedded = _embed_text(sentences)
-# print("임베딩 완료된 문장들 : ",sentences_embedded)
-# print("임베딩 완료된 문장들 모양 0 : ",sentences_embedded.shape[0])
-# print("임베딩 완료된 문장들 모양 1 : ",sentences_embedded.shape[1])
-
-# # faiss index 
-# dim = sentences_embedded.shape[1]
-# base_index = faiss.IndexFlatIP(dim)
-# print("base_index 완성")
-# index = faiss.IndexIDMap2(base_index)
-# print("index map 완성")
-# index.add_with_ids(sentences_embedded, sentences_ids)
-
-# print("index_size : ", index.ntotal)
-
-# # Test
-# query = '은행의 리스크 관리에 대해서 궁금해'
-# q_emb = _embed_text([query])
-# print("임베딩 된 쿼리 : ",q_emb)
-# D, I = index.search(q_emb.astype("float32"), k=4)
-# print(f'--- search results : [f"선택된 n개의 Distance[유사도] : {D}"], [f"선택된 n개의 Index[문장번호] : {I}"] ---' )
-
-# search_result = []
-# for idx, score in zip(I[0], D[0]):
-#     if idx == -1:
-#         continue
-#     search_result.append((sentences[idx], float(score)))
-# print(search_result)

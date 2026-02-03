@@ -9,7 +9,14 @@ import torch
 
 app = FastAPI()
 
-model_path = "BAAI/bge-reranker-v2-m3"
+model_path = r"C:\\Users\\1598505\\OneDrive - Standard Chartered Bank\\5.Python\\AI\\0.models\\bge-rerank-v2-m3" #폴더 경로까지만 입력해도 괜찮음
+import os 
+print('현재 경로 : ', os.getcwd())
+if os.path.exists(model_path):
+    print('경로 존재')
+else:
+    print('경로 없음')
+
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
