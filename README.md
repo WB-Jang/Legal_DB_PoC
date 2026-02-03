@@ -7,7 +7,7 @@ CPU :11th Gen Intel(R) Core(TM) i5-1145G7 @ 2.60GHz 1.50 GHz
 RAM : 16GB
 GPU : N/A
 VRAM : N/A
-폐쇄망 환경
+폐쇄망 환경 : 시스템 구축에 필요한 라이브러리들은 .whl 파일을 통해 설치
 ```
 
 ## 주요 기능
@@ -17,12 +17,16 @@ VRAM : N/A
 - 법률 문서에 특화된 document_parsing.py : X장 XX조 단위로 파싱
 - 부족한 리소스로 인하여 7~8b 사이즈의 모델을 프롬프트 엔지니어링 최적화하여 사용
 - 금융 도메인에 파인튜닝 된 Question Decompostion 모델과 Embedding 모델 사용 가능(본 Github 내 다른 repository 참조)
-- AI agent에 익숙하지 않은 유저들의 Black box에 대한 의구심과 걱정을 고려하여, \n 최종 답변까지 생성하는 RAG가 아니라, 관련 문서들을 요약하고 출처를 정확히 제공하는 Low level RAG system을 고안함
+- AI agent에 익숙하지 않은 유저들의 Black box에 대한 의구심과 걱정을 고려하여, 최종 답변까지 생성하는 RAG가 아니라, 관련 문서들을 요약하고 출처를 정확히 제공하는 Low level RAG system을 고안함
+- ChromaDB 라이브러리가 사내 환경에 설치가 불가하여, faissDB로 대체 사용함
+- 
 
 ## Reference 
 1. RAG 시스템에서 document parsing은 의미론적 단위로 하는 것이 더 효과적
 2. LoRA 방식으로 fine-tuning하는 것이 리소스 효율적
-3. 
+3. Retrival의 성능 향상을 위한 re-rank 방법론 채택
+4. 다국어(특히나 아시아 언어) 성능에 우위를 보인다고 알려진 BGE-M3 임베딩 모델 사용
+
 ## Tech Stack
 ```
 LangGraph, LangChain, 
