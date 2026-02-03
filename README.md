@@ -21,8 +21,8 @@ VRAM : N/A
 ## Tech Stack
 
 ## 작동 방식
-### 현재까지는 Docker가 아닌 bash 내 python 명령어를 통하여 실행하도록 구성
+#### 현재까지는 Docker가 아닌 bash 내 python 명령어를 통하여 실행하도록 구성
 ```bash
 python legal_agent.py
 ```
-### 추후 배포 단계까지 완성할 예정이며, Docker와 Poetry를 활용할 예정
+#### 추후 배포 단계까지 완성할 예정이며, Docker와 Poetry를 활용할 예정
